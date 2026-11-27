@@ -127,9 +127,20 @@ func (a *Agent) Runde(ctx context.Context) time.Duration {
 		}
 	}
 	voll := a.vollJetzt || a.jetzt().Sub(a.vollZuletzt) >= vollAlle
+	beginn := a.jetzt()
 	inv, err := a.P.Inventar(ctx, voll)
 	if err != nil {
 		a.Log.Warnung("Inventar unvollständig: %v", err)
+	}
+	// Die Laufzeit liest die Plattform zu Beginn; das langsame Inventar
+	// (PowerShell: BitLocker, Updates) kann danach Minuten brauchen. Die API
+	// rechnet beim Empfang Startzeit = jetzt - Laufzeit; ohne Nachtrag sähe
+	// das wie ein zweites Gerät mit späterer Startzeit aus („doppelt
+	// gemeldet", win11-1 am 27.11.2026: 4 min 40 s).
+	if inv != nil && inv.LaufzeitSekunden > 0 {
+		if d := a.jetzt().Sub(beginn); d > 0 {
+			inv.LaufzeitSekunden += int64(d / time.Second)
+		}
 	}
 	if voll {
 		a.vollZuletzt, a.vollJetzt = a.jetzt(), false
