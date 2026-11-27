@@ -242,3 +242,36 @@ func TestIntervallGrenzen(t *testing.T) {
 		}
 	}
 }
+
+// langsam braucht für das Inventar (laut Uhr des Agenten) 280 s, wie das
+// PowerShell-Inventar unter Last auf win11-1.
+type langsam struct {
+	attrappe
+	uhr *time.Time
+}
+
+func (p *langsam) Inventar(context.Context, bool) (*protokoll.Inventar, error) {
+	inv := &protokoll.Inventar{Hostname: "WIN11-1", LaufzeitSekunden: 60}
+	*p.uhr = p.uhr.Add(280 * time.Second)
+	return inv, nil
+}
+
+// Die Laufzeit gilt beim Senden, nicht beim Beginn des Inventars — sonst
+// errechnet die API eine spätere Startzeit und meldet die Station doppelt.
+func TestLaufzeitBeimSenden(t *testing.T) {
+	a := &api{t: t}
+	uhr := time.Date(2026, 11, 27, 13, 22, 0, 0, time.UTC)
+	p := &langsam{attrappe: attrappe{token: tokenFest}, uhr: &uhr}
+	ag := neu(t, a, &p.attrappe, "dienst")
+	ag.P = p
+	ag.Jetzt = func() time.Time { return uhr }
+	ag.Runde(context.Background())
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	if len(a.erhalten) == 0 {
+		t.Fatal("kein Lebenszeichen")
+	}
+	if got := a.erhalten[len(a.erhalten)-1].Inventar.LaufzeitSekunden; got != 340 {
+		t.Errorf("Laufzeit %d, erwartet 340", got)
+	}
+}
