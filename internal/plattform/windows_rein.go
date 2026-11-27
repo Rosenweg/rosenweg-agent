@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -93,3 +94,15 @@ func windowsName(produkt, build string) string {
 	}
 	return produkt
 }
+
+// Virtuelle Adapter erkennt man am Namen des Treibers; IfType sagt bei
+// Hyper-V "Ethernet". Gemeint sind die Adapter, die ein Rechner SELBST
+// aufspannt (vSwitch, VPN, WSL) — sie hängen an keinem Switch-Port.
+// Die Netzkarte einer VM ist dagegen echt im Sinn des Anschluss-Wächters:
+// VirtIO (win11-1 in Proxmox) und "Microsoft Hyper-V Network Adapter" (Gast
+// unter Hyper-V) hängen an einer Brücke, und UniFi sieht ihre MAC. Das
+// zeigte der Windows-Lauf der CI (Azure-VM, 27.11.2026).
+var virtuell = regexp.MustCompile(`(?i)hyper-v virtual|virtual adapter|virtual ethernet|vpn|tap-windows|wintun|wireguard|vmware virtual|virtualbox host|loopback|bluetooth|kernel debug|wan miniport`)
+
+// istVirtuell: Beschreibung eines Adapters (GetAdaptersAddresses Description).
+func istVirtuell(beschreibung string) bool { return virtuell.MatchString(beschreibung) }

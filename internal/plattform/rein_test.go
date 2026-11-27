@@ -84,3 +84,21 @@ func TestGrenzen(t *testing.T) {
 		t.Fatal("dauerText")
 	}
 }
+
+func TestVirtuelleAdapter(t *testing.T) {
+	for b, v := range map[string]bool{
+		"Red Hat VirtIO Ethernet Adapter":           false,
+		"Microsoft Hyper-V Network Adapter":         false,
+		"Intel(R) Ethernet Connection (17) I219-LM": false,
+		"Intel(R) Wi-Fi 6E AX211 160MHz":            false,
+		"Hyper-V Virtual Ethernet Adapter":          true,
+		"WireGuard Tunnel":                          true,
+		"TAP-Windows Adapter V9":                    true,
+		"VirtualBox Host-Only Ethernet Adapter":     true,
+		"Bluetooth Device (Personal Area Network)":  true,
+	} {
+		if istVirtuell(b) != v {
+			t.Errorf("%q: virtuell=%v erwartet", b, v)
+		}
+	}
+}

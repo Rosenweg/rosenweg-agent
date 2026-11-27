@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"net"
 	"os/exec"
-	"regexp"
 	"strings"
 	"syscall"
 	"time"
@@ -119,12 +118,6 @@ func betriebssystem() protokoll.Betriebssystem {
 	return bs
 }
 
-// Virtuelle Adapter erkennt man am Namen des Treibers; IfType sagt bei
-// Hyper-V "Ethernet". VirtIO (der Netzadapter in einer Proxmox-VM wie
-// win11-1) ist KEIN virtueller Adapter in diesem Sinn: er hängt an der
-// Brücke, und UniFi sieht seine MAC am Port des Knotens.
-var virtuell = regexp.MustCompile(`(?i)hyper-v|virtual adapter|virtual ethernet|vpn|tap-windows|wintun|wireguard|vmware|virtualbox|loopback|bluetooth|kernel debug`)
-
 func netzWindows() ([]protokoll.Adapter, error) {
 	groesse := uint32(15000)
 	var buf []byte
@@ -152,7 +145,7 @@ func netzWindows() ([]protokoll.Adapter, error) {
 		beschr := windows.UTF16PtrToString(a.Description)
 		art := "andere"
 		switch {
-		case virtuell.MatchString(beschr):
+		case istVirtuell(beschr):
 		case a.IfType == windows.IF_TYPE_ETHERNET_CSMACD:
 			art = "kabel"
 		case a.IfType == windows.IF_TYPE_IEEE80211:
