@@ -1,0 +1,20 @@
+# Rosenweg-Agent auf einer Linux-Station (os-stationen).
+# Liest Kennung und Token aus /etc/rosenweg-station/; Einstellungen optional in
+# /etc/rosenweg-agent/agent.json (z. B. "modus": "parallel" während der
+# Umstellung, docs/umstellung.md).
+[Unit]
+Description=Rosenweg-Agent (Lebenszeichen und Befehle für /stationen)
+Documentation=https://github.com/Rosenweg/rosenweg-agent
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+ExecStart=/usr/bin/rosenweg-agent lauf
+Restart=on-failure
+RestartSec=60
+# Läuft als root: Sperre (station-sperre), Abmelden und Neustart brauchen es.
+StateDirectory=rosenweg-agent
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target
