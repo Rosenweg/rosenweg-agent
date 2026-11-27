@@ -1,0 +1,27 @@
+name: Release
+# Ein Tag v1.2.3 baut alle Plattformen und haengt die Dateien samt SHA256SUMS
+# an das Release. Die Pruefsumme der Windows-exe gehoert danach in Website
+# ad-dc/gpo-rosenweg-agent/einrichten.sh (AGENT_SHA256).
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - run: make test
+      - run: make alle VERSION="${GITHUB_REF_NAME#v}"
+      - name: Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >
+          gh release create "$GITHUB_REF_NAME" dist/* --title "$GITHUB_REF_NAME"
+          --notes "Prüfsummen in SHA256SUMS. Windows: Prüfsumme in Website ad-dc/gpo-rosenweg-agent/einrichten.sh eintragen."
